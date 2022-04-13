@@ -2,6 +2,7 @@ name: Tests and Code Checks
 
 on:
   push:
+    branches:
     - "main"
     - "develop"
     - "*.latest"
@@ -72,7 +73,7 @@ on:
               pip install --user --upgrade pip
               pip install --upgrade setuptools wheel twine check-wheel-contents
               pip --version
-              
+
           - name: Build distributions
             run: ./scripts/build-dist.sh
 
