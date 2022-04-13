@@ -1,3 +1,17 @@
+# **what?**
+# Runs code quality checks, unit tests, and verifies python build on
+# all code commited to the repository. This workflow should not
+# require any secrets since it runs for PRs from forked repos.
+# By default, secrets are not passed to workflows running from
+# a forked repo.
+
+# **why?**
+# Ensure code for dbt meets a certain quality standard.
+
+# **when?**
+# This will run for all PRs, when code is pushed to a release
+# branch, and when manually triggered.
+
 name: Tests and Code Checks
 
 on:
@@ -21,9 +35,9 @@ defaults:
   run:
     shell: bash
 
-  jobs:
-    code-quality:
-      name: code-quality
+jobs:
+  code-quality:
+    name: code-quality
 
     runs-on: ubuntu-latest
 
@@ -46,100 +60,96 @@ defaults:
           pre-commit --version
           mypy --version
           dbt --version
+
       - name: Run pre-commit hooks
         run: pre-commit run --all-files --show-diff-on-failure
 
-    build:
-      name: build packages
+  build:
+    name: build packages
 
-      runs-on: ubuntu-latest
+    runs-on: ubuntu-latest
 
-      outputs:
-        is_alpha: ${{ steps.check-is-alpha.outputs.is_alpha }}
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v2
+        with:
+          persist-credentials: false
 
-      steps:
-        - name: Check out the repository
-          uses: actions/checkout@v2
-          with:
-            persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
 
-        - name: Set up Python
-          uses: actions/setup-python@v2
-          with:
-            python-version: 3.8
+      - name: Install python dependencies
+        run: |
+          pip install --user --upgrade pip
+          pip install --upgrade setuptools wheel twine check-wheel-contents
+          pip --version
 
-        - name: Install python dependencies
-          run: |
-            pip install --user --upgrade pip
-            pip install --upgrade setuptools wheel twine check-wheel-contents
-            pip --version
+      - name: Build distributions
+        run: ./scripts/build-dist.sh
 
-        - name: Build distributions
-          run: ./scripts/build-dist.sh
+      - name: Show distributions
+        run: ls -lh dist/
 
-        - name: Show distributions
-          run: ls -lh dist/
+      - name: Check distribution descriptions
+        run: |
+          twine check dist/*
 
-        - name: Check distribution descriptions
-          run: |
-            twine check dist/*
-        - name: Check wheel contents
-          run: |
-            check-wheel-contents dist/*.whl --ignore W007,W008
-        - name: Check if this is an alpha version
-          id: check-is-alpha
-          run: |
-            export is_alpha=0
-            if [[ "$(ls -lh dist/)" == *"a1"* ]]; then export is_alpha=1; fi
-            echo "::set-output name=is_alpha::$is_alpha"
-        - uses: actions/upload-artifact@v2
-          with:
-            name: dist
-            path: dist/
+      - name: Check wheel contents
+        run: |
+          check-wheel-contents dist/*.whl --ignore W007,W008
 
-      test-build:
-        name: verify packages / python ${{ matrix.python-version }} / ${{ matrix.os }}
+      - uses: actions/upload-artifact@v2
+        with:
+          name: dist
+          path: dist/
 
-        if: needs.build.outputs.is_alpha == 0
+  test-build:
+    name: verify packages / python ${{ matrix.python-version }} / ${{ matrix.os }}
 
-        needs: build
+    needs: build
 
-        runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
 
-        strategy:
-          fail-fast: false
-          matrix:
-            os: [ubuntu-latest, macos-latest, windows-latest]
-            python-version: [3.7, 3.8, 3.9]
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python-version: [3.7, 3.8, 3.9]
 
-        steps:
-          - name: Set up Python ${{ matrix.python-version }}
-            uses: actions/setup-python@v2
-            with:
-              python-version: ${{ matrix.python-version }}
+    steps:
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
 
-          - name: Install python dependencies
-            run: |
-              pip install --user --upgrade pip
-              pip install --upgrade wheel
-              pip --version
-          - uses: actions/download-artifact@v2
-            with:
-              name: dist
-              path: dist/
+      - name: Install python dependencies
+        run: |
+          pip install --user --upgrade pip
+          pip install --upgrade wheel
+          pip --version
 
-          - name: Show distributions
-            run: ls -lh dist/
+      - uses: actions/download-artifact@v2
+        with:
+          name: dist
+          path: dist/
 
-          - name: Install wheel distributions
-            run: |
-              find ./dist/*.whl -maxdepth 1 -type f | xargs pip install --force-reinstall --find-links=dist/
-          - name: Check wheel distributions
-            run: |
-              dbt --version
-          - name: Install source distributions
-            run: |
-              find ./dist/*.gz -maxdepth 1 -type f | xargs pip install --force-reinstall --find-links=dist/
-          - name: Check source distributions
-            run: |
-              dbt --version
+      - name: Show distributions
+        run: ls -lh dist/
+
+      - name: Install wheel distributions
+        run: |
+          find ./dist/*.whl -maxdepth 1 -type f | xargs pip install --force-reinstall --find-links=dist/
+
+      - name: Check wheel distributions
+        run: |
+          dbt --version
+
+      - name: Install source distributions
+        run: |
+          find ./dist/*.gz -maxdepth 1 -type f | xargs pip install --force-reinstall --find-links=dist/
+
+      - name: Check source distributions
+        run: |
+          dbt --version
