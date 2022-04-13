@@ -21,7 +21,7 @@ dbt docs: https://docs.getdbt.com/docs/contributing/building-a-new-adapter
 */
 {% endmacro %}
 
---  Example from postgres adapter in dbt-core 
+--  Example from postgres adapter in dbt-core
 --  Notice how you can build out other methods than the designated ones for the impl.py file,
 --  to make a more robust adapter. ex. (verify_database)
 
@@ -34,7 +34,7 @@ dbt docs: https://docs.getdbt.com/docs/contributing/building-a-new-adapter
      create schema if not exists {{ relation.without_identifier().include(database=False) }}
    {%- endcall -%}
  {% endmacro %}
- 
+
 */
 
 {% macro testadapter__create_schema(relation) -%}

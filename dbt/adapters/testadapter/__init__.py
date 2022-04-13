@@ -9,4 +9,5 @@ from dbt.include import testadapter
 Plugin = AdapterPlugin(
     adapter=TestAdapterAdapter,
     credentials=TestAdapterCredentials,
-    include_path=testadapter.PACKAGE_PATH)
+    include_path=testadapter.PACKAGE_PATH,
+)
