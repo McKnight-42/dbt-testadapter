@@ -1,9 +1,9 @@
 from contextlib import contextmanager
 from dataclasses import dataclass
-import dbt.exceptions
+import dbt.exceptions  # noqa
 from dbt.adapters.base import Credentials
 from dbt.adapters.sql import SQLConnectionManager
-from dbt.logger import GLOBAL_LOGGER as logger
+from dbt.logger import GLOBAL_LOGGER as logger  # noqa
 
 
 @dataclass

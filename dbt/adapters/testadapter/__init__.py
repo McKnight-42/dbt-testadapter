@@ -1,4 +1,4 @@
-from dbt.adapters.testadapter.connections import TestAdapterConnectionManager
+from dbt.adapters.testadapter.connections import TestAdapterConnectionManager  # noqa
 from dbt.adapters.testadapter.connections import TestAdapterCredentials
 from dbt.adapters.testadapter.impl import TestAdapterAdapter
 
